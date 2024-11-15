@@ -16,3 +16,53 @@ library(broom)
 set.seed(1)
 
 ```
+
+## Problem 1
+
+```{r}
+#function for finding the duplicate
+check_duplicate_birthday=function(n){
+  birthdays = sample(1:365, n, replace =TRUE)
+  #check if they are duplicated
+  if(length(birthdays)==length(unique(birthdays))){
+    return(FALSE)
+  }else{
+    return(TRUE)
+  }
+  
+}
+
+
+```
+
+```{r}
+probability_calculation=
+  expand_grid(
+    #sample size from 2 to 50
+    sample_size=2:50,
+    iter=1:10000) |>
+  mutate(
+    #using map function
+    duplicate_df=map(sample_size,check_duplicate_birthday)
+  )|> 
+  #unnest
+  unnest(duplicate_df) |>
+  group_by(sample_size)|>
+  summarize(probability = mean(duplicate_df))
+probability_calculation
+```
+```{r}
+#plot the probability
+probability_calculation|>
+  ggplot(aes(x=sample_size,y=probability))+
+  geom_line() +
+  geom_point() +
+  labs(
+    x = "Group Size",
+    y = "Probability of Shared Birthday",
+    title = "Probability of At Least Two People Sharing a Birthday"
+  ) +
+  theme_minimal()
+```
+
+With the group size getting larger, the probability that at least two people in the group share the same birthday also increases
