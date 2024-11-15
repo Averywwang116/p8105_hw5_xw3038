@@ -117,11 +117,13 @@ combined_df|> group_by(mu)|>
   labs(
     x = "mu",
     y = "power of test",
-    title = "Proportion of Times Null was Rejected with different mu"
+    title = "Proportion of Times Null was Rejected with Different mu"
   ) +
   theme_minimal()
 
 ```
+
+It can be observed that the larger effect size, the higher power
 
 
 ```{r}
