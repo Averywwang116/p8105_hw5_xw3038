@@ -68,6 +68,7 @@ probability_calculation|>
 With the group size getting larger, the probability that at least two people in the group share the same birthday also increases
 
 # Problem 2
+
 ```{r}
 # make simulation
 simulation_ttest=function(mu,n = 30,sigma = 5,alpha=0.05){
@@ -148,4 +149,88 @@ combined_df|> group_by(mu)|>
 ```
 
 the sample average of $\hat{\mu}$ for which the null hypothesis was rejected is not approximately equal to the true value of $\mu$. The possible reason is that samples with higher average estimate are more likely to have statistically significant results, and thus more likely to reject the null hypothesis.
+
+## Problem 3
+
+```{r}
+homicide=read_csv(file = "./homicide-data.csv", na = c(".", "NA", "")) |>
+  janitor::clean_names() 
+```
+The raw dataset has `r ncol(homicide)` columns and `r nrow(homicide)` rows. And the dataset include variables: `r unique(names(homicide))` that describes the information about the homicide cases such as the victim information, location of the homicide events, date being reported, and the disposition of the homicide case.
+
+* summarize within cities to obtain the total number of homicides and the number of unsolved homicides (those for which the disposition is “Closed without arrest” or “Open/No arrest”).
+
+```{r}
+#Create a city_state
+homicide_data=homicide|> 
+  mutate(city_state = paste(city, state, sep = ", "))|>
+  distinct()
+homicide_data|>
+  group_by(city)|>
+  #find the total homicide 
+  summarize(total_homicides = n(),
+            # find the homocides that are unsolved
+            unsolved_homicides=sum(disposition %in% c("Closed without arrest", "Open/No arrest")))
+
+```
+
+
+* Estimate the proportion of homicides that are unsolved for Baltimore, MD
+
+```{r}
+#filter out Baltimore
+baltimore_data =homicide_data|>filter(city_state=="Baltimore, MD")
+total_bal=nrow(baltimore_data)
+unsolved_bal=sum(baltimore_data$disposition %in% c("Closed without arrest", "Open/No arrest"))
+# Perform the proportion test
+prop_test_result=prop.test(unsolved_bal, total_bal)
+tidy_result=broom::tidy(prop_test_result)
+
+estimated_proportion=tidy_result|>pull(estimate)
+conf_low=tidy_result|>pull(conf.low)
+conf_high=tidy_result|>pull(conf.high)
+
+```
+
+So the estimated proportion is `r round(estimated_proportion, 2)` and the 95% percent CI falls in [`r round(conf_low, 2)`, `r round(conf_high, 2)`].
+
+* Extract both the proportion of unsolved homicides and the confidence interval for each
+
+```{r}
+#make summary on the homocide data for total and unsolved
+homicide_summary_city =homicide_data |>
+  group_by(city_state) |>
+  summarize(
+    total_homicides = n(),
+    unsolved_homicides=sum(disposition %in% c("Closed without arrest", "Open/No arrest")),
+  )
+
+#figure out the proportion and CI
+cities_proportion=homicide_summary_city |>
+  mutate(
+    proportion_cities= map2(
+      unsolved_homicides, total_homicides,
+      ~ prop.test(.x,.y) |>broom::tidy()
+    )
+  )|>unnest(proportion_cities)|> 
+  select(city_state,total_homicides, unsolved_homicides,estimate, conf.low,conf.high)
+
+cities_proportion
+```
+
+* Create a plot that shows the estimates and CIs for each city
+
+```{r}
+cities_proportion|>
+  ggplot(aes(x = reorder(city_state, estimate), y = estimate))+
+  geom_point(color="red",stat="identity")+
+  geom_errorbar(aes(ymin = conf.low, ymax = conf.high))+
+  coord_flip() +
+  labs(
+    title = "Proportion and CIs of Unsolved Homicides by City",
+    x = "City",
+    y = "Proportion and 95% CI"
+  ) +theme_minimal() 
+
+```
 
