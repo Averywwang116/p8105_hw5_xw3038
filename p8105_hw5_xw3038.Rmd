@@ -1,0 +1,18 @@
+---
+title: "p8105_hw5_xw3038"
+author: "Avery Wang"
+date: "2024-11-14"
+output: github_document
+---
+
+```{r}
+library(tidyverse)
+library(rvest)
+library(readr)
+library(purrr)
+library(tidyr)
+library(broom)
+
+set.seed(1)
+
+```
